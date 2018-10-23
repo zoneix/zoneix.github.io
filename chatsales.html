@@ -1,0 +1,177 @@
+
+
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">	
+    </head>
+    <link type="text/css" href="https://mm.ccone.net/chat-adapter/html/css/client.css?1" rel="stylesheet" />
+    
+    <style>
+        textarea {resize:none}
+    </style>
+    <script type="text/javascript"  src="https://mm.ccone.net/chat-adapter/html/js/ThinConnectChatAPI4.js?1"></script>
+    <script type="text/javascript">
+        var PROTOCOL = "https"
+        var IP = "mm.ccone.net";
+        var PORT = 443;
+        var EXCEPTION_MESSAGE = 'Unable to process your request.';
+        var SHOW_EXCEPTION_DETAILS = false;
+        var dataArr = [];
+        var chatAPI = new ThinConnectChat(PROTOCOL, IP, PORT, EXCEPTION_MESSAGE, SHOW_EXCEPTION_DETAILS);
+
+        window.onload = function () {
+            //alert("onload called");
+            //chatAPI.loadReasons();
+            chatAPI.checkAutoSubmit();
+        }
+        function submit() {
+            var jsonData = null;
+            dataArr = [];
+            //var customerName = document.getElementById('custname').value;
+			var customerName = "Carl Thomas";
+            chatAPI.getParam('custname', customerName);
+
+            if (validateCustomerName(customerName)) {
+                //var mobileNumber = document.getElementById('mobilenum').value;
+				var mobileNumber = "9198416890";
+                chatAPI.getParam('mobilenum', mobileNumber);
+
+                if (validateMobileNumber(mobileNumber)) {
+                    //var emailAddress = document.getElementById('emailid').value;
+					var emailAddress = "cthomas@cumulus.com";
+                    if (validateEmailAddress(emailAddress)) {
+                        chatAPI.getParam('emailid', emailAddress);
+
+                        //var question = document.getElementById('question').value;
+						var question = "Can I get a sales rep to help me with a finance quote?";
+
+                        if (validateQuestion(question)) {
+                            chatAPI.getParam('question', question);
+							//hardcoding which chat queue we go to
+                            var reason = "546";
+							//console.log(document.getElementById('reason').value);
+                            var sendtranscript = "false";
+                            chatAPI.getParam('reason', reason);
+                       
+                            chatAPI.getParam('sendtranscript', sendtranscript);
+
+
+                            chatAPI.getParam('CUSTOM_MESSAGE', EXCEPTION_MESSAGE);
+                            chatAPI.getParam('SHOW_EXCEPTION_DETAILS', SHOW_EXCEPTION_DETAILS);
+                            chatAPI.getParam('REQUEST-ID', 0);
+                            chatAPI.getHiddenParam();
+                            console.log("dataArr=" + dataArr);
+                            chatAPI.submit(dataArr);
+
+                        }
+                    }
+                }
+            }
+			
+			window.close();
+
+        }
+
+        // Validation method for Customer name
+        function validateCustomerName(customerName) {
+            var isValidCustomerName = false;
+
+            // Validate the Customer name as per businness logic
+            // and set the value to true if it meets the logic.
+            isValidCustomerName = true;
+
+            return isValidCustomerName;
+        }
+
+        // Validation method for Mobile number
+        function validateMobileNumber(mobileNumber) {
+            var isValidMobileNumber = false;
+
+            // Validate the Mobile Number as per businness logic
+            // and set the value to true if it meets the logic.
+            isValidMobileNumber = true;
+
+            return isValidMobileNumber;
+        }
+
+        // Validation method for Email Address
+        function validateEmailAddress(emailAddress) {
+            var isValidEmailAddress = false;
+
+            // Validate the Email Address as per businness logic
+            // and set the value to true if it meets the logic.
+            isValidEmailAddress = true;
+
+            return isValidEmailAddress;
+        }
+
+        // Validation method for Question
+        function validateQuestion(question) {
+            var isValidQuestion = false;
+
+            // Validate the Mobile Number as per businness logic
+            // and set the value to true if it meets the logic.
+            isValidQuestion = true;
+
+            return isValidQuestion;
+        }
+    </script>
+    <body style="margin: 0; padding: 0;">
+
+        <table border="0" cellpadding="8" cellspacing="1" style="min-width: 320px;">
+
+            <tr>
+                <td>&nbsp;</td>
+                <td>
+                    <input id="btnLogin" class="button" id="startConv" align="middle" type="button" value="Start Conversation" onclick="submit()" />
+                </td>
+            </tr>
+            <tr id="tr_customData" style="height:0px">
+                <td style="height:0px">
+                    <input type="hidden" id="customerId" name="customerId"/>
+                    <input type="hidden" id="groupId" name="groupId"/>
+                    <input type="hidden" id="data0" name="launch_point" value="Cumulus Homepage"/>
+                    <input type="hidden" id="data1" name="data1" value="Model_X Diamond Customer" />
+                    <input type="hidden" id="data2" name="data2" value="Finance Quote" />
+                    <input type="hidden" id="data3" name="data3"/>
+                    <input type="hidden" id="data4" name="data4"/>
+                    <input type="hidden" id="data5" name="data5"/>
+                    <input type="hidden" id="data6" name="data6"/>
+                    <input type="hidden" id="data7" name="data7"/>
+                    <input type="hidden" id="data8" name="data8"/>
+                    <input type="hidden" id="data9" name="data9"/>
+                </td>
+            </tr>
+
+            <!-- Do not change the following code -->
+            <tr style="height:0px">
+                <td style="height:0px">
+                    <input type="hidden" id="sourceUrl" name="sourceUrl"/>
+                    <input type="hidden" id="chatRsnSelMode" name="chatRsnSelMode"/>
+                    <input type="hidden" id="websitePkey" name="websitePkey"/>
+                    <input type="hidden" id="defaultChatReason" name="defaultChatReason"/>
+                    <input type="hidden" id="traversalHistory" name="traversalHistory"/>
+                </td>
+            </tr>
+        </table>		
+    </body>
+
+
+</html>
+
+<!-- 
+        <table>
+            <tr>
+                <th colspan='3'> Exception </th>
+            </tr>
+            <tr>
+                <th> Number </th> <th> Name </th> <th> Message </th>   				
+            </tr>
+            <tr>
+                <td> 102</td> <td> Test </td> <td> Mesa</td>
+            </tr>
+        </table>
+-->

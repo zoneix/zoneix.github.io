@@ -4,21 +4,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WebRTC Video Recorder</title>
+  <title>WebRTC Video Recorder with Watermark</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
 </head>
 
 <body>
   <section class="section">
     <div class="container">
-      <h1 class="title has-text-centered">WebRTC Video Recorder</h1>
+      <h1 class="title has-text-centered">WebRTC Video Recorder with Watermark</h1>
       <div class="columns is-centered">
         <div class="column is-half has-text-centered">
+          <!-- Webcam Preview -->
           <video id="preview" class="box" autoplay muted playsinline></video>
+
+          <!-- Countdown Timer -->
+          <p id="countdown-timer" class="is-size-4 has-text-danger"></p>
+
+          <!-- Buttons -->
           <div class="buttons is-centered">
             <button id="start-recording" class="button is-primary">Start Recording</button>
             <button id="stop-recording" class="button is-warning" disabled>Stop Recording</button>
             <button id="save-recording" class="button is-link" disabled>Save</button>
+          </div>
+
+          <!-- Playback Section -->
+          <div id="playback-section" style="display: none;">
+            <h2 class="subtitle has-text-centered">Playback</h2>
+            <video id="playback" class="box" controls></video>
           </div>
         </div>
       </div>
@@ -30,10 +42,20 @@
     const stopButton = document.getElementById('stop-recording');
     const saveButton = document.getElementById('save-recording');
     const videoElement = document.getElementById('preview');
+    const countdownTimer = document.getElementById('countdown-timer');
+    const playbackSection = document.getElementById('playback-section');
+    const playbackElement = document.getElementById('playback');
 
     let mediaRecorder;
     let recordedChunks = [];
     let recordingTimeout;
+    let countdownInterval;
+    let countdownTime = 30; // Countdown starts from 30 seconds
+
+    // Canvas for Watermark
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    let canvasStream;
 
     async function initializeMedia() {
       try {
@@ -41,8 +63,22 @@
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         videoElement.srcObject = stream;
 
+        // Set up canvas to match video dimensions
+        const videoTrack = stream.getVideoTracks()[0];
+        const videoSettings = videoTrack.getSettings();
+        canvas.width = videoSettings.width || 640;
+        canvas.height = videoSettings.height || 480;
+
+        // Overlay video and watermark on canvas
+        canvasStream = canvas.captureStream();
+        const canvasTracks = canvasStream.getTracks();
+        const mixedStream = new MediaStream([...canvasTracks, ...stream.getAudioTracks()]);
+
+        // Start drawing video and watermark on canvas in real-time
+        drawCanvas(videoElement);
+
         // Set up MediaRecorder
-        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder = new MediaRecorder(mixedStream);
         mediaRecorder.ondataavailable = (event) => {
           if (event.data.size > 0) {
             recordedChunks.push(event.data);
@@ -52,10 +88,39 @@
         mediaRecorder.onstop = () => {
           saveButton.disabled = false;
           stopButton.disabled = true;
+          clearInterval(countdownInterval); // Stop the countdown timer
+          countdownTimer.textContent = ''; // Clear the timer display
+
+          // Enable playback of the recorded video
+          const blob = new Blob(recordedChunks, { type: 'video/mp4' });
+          const playbackURL = URL.createObjectURL(blob);
+          playbackElement.src = playbackURL;
+          playbackSection.style.display = 'block'; // Show the playback section
         };
       } catch (error) {
         alert('Error accessing webcam: ' + error.message);
       }
+    }
+
+    function drawCanvas(video) {
+      const watermarkImage = new Image();
+      watermarkImage.src = 'https://upload.wikimedia.org/wikipedia/commons/a/a0/Cisco_logo_blue_2016.svg'; // Cisco logo URL
+      watermarkImage.onload = () => {
+        (function render() {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height); // Draw video on canvas
+          const logoWidth = 100; // Width of the watermark
+          const logoHeight = 50; // Height of the watermark
+          const margin = 10; // Margin from the bottom-right corner
+          ctx.drawImage(
+            watermarkImage,
+            canvas.width - logoWidth - margin,
+            canvas.height - logoHeight - margin,
+            logoWidth,
+            logoHeight
+          ); // Draw watermark on canvas
+          requestAnimationFrame(render); // Keep drawing
+        })();
+      };
     }
 
     startButton.addEventListener('click', () => {
@@ -64,6 +129,18 @@
         mediaRecorder.start();
         startButton.disabled = true;
         stopButton.disabled = false;
+        playbackSection.style.display = 'none'; // Hide playback section during recording
+        countdownTime = 30; // Reset the countdown timer
+        updateCountdownDisplay();
+
+        // Start the countdown timer
+        countdownInterval = setInterval(() => {
+          countdownTime--;
+          updateCountdownDisplay();
+          if (countdownTime <= 0) {
+            stopRecording(); // Stop recording when the timer reaches 0
+          }
+        }, 1000);
 
         // Stop recording automatically after 30 seconds
         recordingTimeout = setTimeout(() => {
@@ -92,9 +169,15 @@
       if (mediaRecorder.state === 'recording') {
         mediaRecorder.stop();
         clearTimeout(recordingTimeout); // Clear the timeout if the user stops recording manually
+        clearInterval(countdownInterval); // Stop the countdown timer
         startButton.disabled = false;
         stopButton.disabled = true;
+        countdownTimer.textContent = ''; // Clear the timer display
       }
+    }
+
+    function updateCountdownDisplay() {
+      countdownTimer.textContent = `Time remaining: ${countdownTime}s`;
     }
 
     // Initialize media on page load

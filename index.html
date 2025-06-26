@@ -47,6 +47,10 @@
     const playbackElement = document.getElementById('playback');
 
     let mediaRecorder;
+    mediaRecorder.canvas = {
+          width: 1280,
+          height: 720
+      };
     let recordedChunks = [];
     let recordingTimeout;
     let countdownInterval;

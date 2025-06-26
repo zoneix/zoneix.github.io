@@ -66,8 +66,8 @@
         // Set up canvas to match video dimensions
         const videoTrack = stream.getVideoTracks()[0];
         const videoSettings = videoTrack.getSettings();
-        canvas.width = videoSettings.width || 640;
-        canvas.height = videoSettings.height || 480;
+        canvas.width = videoSettings.width || 1280;
+        canvas.height = videoSettings.height || 720;
 
         // Overlay video and watermark on canvas
         canvasStream = canvas.captureStream();
@@ -108,8 +108,8 @@
       watermarkImage.onload = () => {
         (function render() {
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height); // Draw video on canvas
-          const logoWidth = 100; // Width of the watermark
-          const logoHeight = 50; // Height of the watermark
+          const logoWidth = 86.0; // Width of the watermark
+          const logoHeight = 57.3; // Height of the watermark
           const margin = 10; // Margin from the bottom-right corner
           ctx.drawImage(
             watermarkImage,

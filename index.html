@@ -47,10 +47,6 @@
     const playbackElement = document.getElementById('playback');
 
     let mediaRecorder;
-    mediaRecorder.canvas = {
-          width: 1280,
-          height: 720
-      };
     let recordedChunks = [];
     let recordingTimeout;
     let countdownInterval;
@@ -60,11 +56,24 @@
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     let canvasStream;
+    const minWidth = 1280;
+    const minHeight = 720;
+
+    //camera contraints
+    const constraints = {
+            'audio': {'echoCancellation': true},
+            'video': {
+                //'deviceId': cameraId,
+                'width': {'min': minWidth},
+                'height': {'min': minHeight}
+                }
+            };
 
     async function initializeMedia() {
       try {
         // Request camera access
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        //const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
         videoElement.srcObject = stream;
 
         // Set up canvas to match video dimensions

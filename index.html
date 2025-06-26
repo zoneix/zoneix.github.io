@@ -17,6 +17,7 @@
           <video id="preview" class="box" autoplay muted playsinline></video>
           <div class="buttons is-centered">
             <button id="start-recording" class="button is-primary">Start Recording</button>
+            <button id="stop-recording" class="button is-warning" disabled>Stop Recording</button>
             <button id="save-recording" class="button is-link" disabled>Save</button>
           </div>
         </div>
@@ -26,11 +27,13 @@
 
   <script>
     const startButton = document.getElementById('start-recording');
+    const stopButton = document.getElementById('stop-recording');
     const saveButton = document.getElementById('save-recording');
     const videoElement = document.getElementById('preview');
 
     let mediaRecorder;
     let recordedChunks = [];
+    let recordingTimeout;
 
     async function initializeMedia() {
       try {
@@ -48,6 +51,7 @@
 
         mediaRecorder.onstop = () => {
           saveButton.disabled = false;
+          stopButton.disabled = true;
         };
       } catch (error) {
         alert('Error accessing webcam: ' + error.message);
@@ -58,16 +62,18 @@
       if (mediaRecorder.state === 'inactive') {
         recordedChunks = []; // Clear previous recordings
         mediaRecorder.start();
-        startButton.textContent = 'Recording...';
         startButton.disabled = true;
+        stopButton.disabled = false;
 
-        // Stop recording after 30 seconds
-        setTimeout(() => {
-          mediaRecorder.stop();
-          startButton.textContent = 'Start Recording';
-          startButton.disabled = false;
+        // Stop recording automatically after 30 seconds
+        recordingTimeout = setTimeout(() => {
+          stopRecording();
         }, 30000);
       }
+    });
+
+    stopButton.addEventListener('click', () => {
+      stopRecording();
     });
 
     saveButton.addEventListener('click', () => {
@@ -81,6 +87,15 @@
       a.click();
       URL.revokeObjectURL(url);
     });
+
+    function stopRecording() {
+      if (mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        clearTimeout(recordingTimeout); // Clear the timeout if the user stops recording manually
+        startButton.disabled = false;
+        stopButton.disabled = true;
+      }
+    }
 
     // Initialize media on page load
     window.onload = initializeMedia;

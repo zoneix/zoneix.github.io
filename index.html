@@ -1,1 +1,90 @@
-Hello World
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebRTC Video Recorder</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+</head>
+
+<body>
+  <section class="section">
+    <div class="container">
+      <h1 class="title has-text-centered">WebRTC Video Recorder</h1>
+      <div class="columns is-centered">
+        <div class="column is-half has-text-centered">
+          <video id="preview" class="box" autoplay muted playsinline></video>
+          <div class="buttons is-centered">
+            <button id="start-recording" class="button is-primary">Start Recording</button>
+            <button id="save-recording" class="button is-link" disabled>Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const startButton = document.getElementById('start-recording');
+    const saveButton = document.getElementById('save-recording');
+    const videoElement = document.getElementById('preview');
+
+    let mediaRecorder;
+    let recordedChunks = [];
+
+    async function initializeMedia() {
+      try {
+        // Request camera access
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        videoElement.srcObject = stream;
+
+        // Set up MediaRecorder
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            recordedChunks.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = () => {
+          saveButton.disabled = false;
+        };
+      } catch (error) {
+        alert('Error accessing webcam: ' + error.message);
+      }
+    }
+
+    startButton.addEventListener('click', () => {
+      if (mediaRecorder.state === 'inactive') {
+        recordedChunks = []; // Clear previous recordings
+        mediaRecorder.start();
+        startButton.textContent = 'Recording...';
+        startButton.disabled = true;
+
+        // Stop recording after 30 seconds
+        setTimeout(() => {
+          mediaRecorder.stop();
+          startButton.textContent = 'Start Recording';
+          startButton.disabled = false;
+        }, 30000);
+      }
+    });
+
+    saveButton.addEventListener('click', () => {
+      const blob = new Blob(recordedChunks, { type: 'video/mp4' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = 'recording.mp4';
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // Initialize media on page load
+    window.onload = initializeMedia;
+  </script>
+</body>
+
+</html>

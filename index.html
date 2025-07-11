@@ -2,32 +2,35 @@
 <html lang="en">
 
 <head>
+  <!-- Meta tags for proper HTML structure and responsive design -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WebRTC Video Recorder with Watermark</title>
+  <!-- Bulma CSS framework for styling -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
 </head>
 
 <body>
+  <!-- Main application section -->
   <section class="section">
     <div class="container">
       <h1 class="title has-text-centered">WebRTC Video Recorder with Watermark</h1>
       <div class="columns is-centered">
         <div class="column is-half has-text-centered">
-          <!-- Webcam Preview -->
+          <!-- Live webcam preview - shows real-time camera feed -->
           <video id="preview" class="box" autoplay muted playsinline></video>
 
-          <!-- Countdown Timer -->
+          <!-- Countdown timer display - shows remaining recording time -->
           <p id="countdown-timer" class="is-size-4 has-text-danger"></p>
 
-          <!-- Buttons -->
+          <!-- Control buttons for recording functionality -->
           <div class="buttons is-centered">
             <button id="start-recording" class="button is-primary">Start Recording</button>
             <button id="stop-recording" class="button is-warning" disabled>Stop Recording</button>
             <button id="save-recording" class="button is-link" disabled>Save</button>
           </div>
 
-          <!-- Playback Section -->
+          <!-- Playback section - shows recorded video after recording is complete -->
           <div id="playback-section" style="display: none;">
             <h2 class="subtitle has-text-centered">Playback</h2>
             <video id="playback" class="box" controls></video>
@@ -38,6 +41,9 @@
   </section>
 
   <script>
+    // ========================================
+    // DOM ELEMENT REFERENCES
+    // ========================================
     const startButton = document.getElementById('start-recording');
     const stopButton = document.getElementById('stop-recording');
     const saveButton = document.getElementById('save-recording');
@@ -46,69 +52,82 @@
     const playbackSection = document.getElementById('playback-section');
     const playbackElement = document.getElementById('playback');
 
-    let mediaRecorder;
-    let recordedChunks = [];
-    let recordingTimeout;
-    let countdownInterval;
-    let countdownTime = 30; // Countdown starts from 30 seconds
+    // ========================================
+    // RECORDING STATE VARIABLES
+    // ========================================
+    let mediaRecorder;           // MediaRecorder instance for capturing video
+    let recordedChunks = [];      // Array to store video data chunks
+    let recordingTimeout;         // Timeout for auto-stopping recording after 30 seconds
+    let countdownInterval;        // Interval for updating countdown timer
+    let countdownTime = 30;       // Countdown starts from 30 seconds
 
-    // Canvas for Watermark
+    // ========================================
+    // CANVAS SETUP FOR WATERMARK OVERLAY
+    // ========================================
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     let canvasStream;
-    const minWidth = 1280;
-    const minHeight = 720;
+    const minWidth = 1280;    // Minimum video width in pixels
+    const minHeight = 720;    // Minimum video height in pixels
 
-    //camera contraints
+    // ========================================
+    // MEDIA CONSTRAINTS FOR CAMERA ACCESS
+    // ========================================
     const constraints = {
-            'audio': {'echoCancellation': true},
+            'audio': {'echoCancellation': true},  // Enable audio with echo cancellation
             'video': {
-                //'deviceId': cameraId,
-                'width': {'min': minWidth},
-                'height': {'min': minHeight}
+                //'deviceId': cameraId,           // Uncomment to specify specific camera
+                'width': {'min': minWidth},       // Minimum video width
+                'height': {'min': minHeight}      // Minimum video height
                 }
             };
 
+    // ========================================
+    // INITIALIZE MEDIA STREAM AND SETUP RECORDING
+    // ========================================
     async function initializeMedia() {
       try {
-        // Request camera access
+        // Request access to user's camera and microphone
         //const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        videoElement.srcObject = stream;
+        videoElement.srcObject = stream;  // Display live video feed
 
-        // Set up canvas to match video dimensions
+        // Configure canvas dimensions to match video resolution
         const videoTrack = stream.getVideoTracks()[0];
         const videoSettings = videoTrack.getSettings();
         canvas.width = videoSettings.width || 1280;
         canvas.height = videoSettings.height || 720;
 
-        // Overlay video and watermark on canvas
+        // Create mixed stream: canvas (with watermark) + audio
         canvasStream = canvas.captureStream();
         const canvasTracks = canvasStream.getTracks();
         const mixedStream = new MediaStream([...canvasTracks, ...stream.getAudioTracks()]);
 
-        // Start drawing video and watermark on canvas in real-time
+        // Start real-time drawing of video with watermark overlay
         drawCanvas(videoElement);
 
-        // Set up MediaRecorder
+        // Initialize MediaRecorder to capture the mixed stream
         mediaRecorder = new MediaRecorder(mixedStream);
+        
+        // Handle data available events (video chunks)
         mediaRecorder.ondataavailable = (event) => {
           if (event.data.size > 0) {
             recordedChunks.push(event.data);
           }
         };
 
+        // Handle recording stop event
         mediaRecorder.onstop = () => {
-          saveButton.disabled = false;
-          stopButton.disabled = true;
-          clearInterval(countdownInterval); // Stop the countdown timer
-          countdownTimer.textContent = ''; // Clear the timer display
+          saveButton.disabled = false;           // Enable save button
+          stopButton.disabled = true;            // Disable stop button
+          clearInterval(countdownInterval);      // Stop countdown timer
+          countdownTimer.textContent = '';       // Clear timer display
 
-          // Enable playback of the recorded video
+          // Create video blob and enable playback
           const blob = new Blob(recordedChunks, { type: 'video/mp4' });
           const playbackURL = URL.createObjectURL(blob);
           playbackElement.src = playbackURL;
-          playbackSection.style.display = 'block'; // Show the playback section
+          playbackSection.style.display = 'block'; // Show playback section
         };
       } catch (error) {
         alert('Error accessing webcam: ' + error.message);
@@ -136,17 +155,20 @@
       };
     }
 
+    // ========================================
+    // START RECORDING BUTTON EVENT LISTENER
+    // ========================================
     startButton.addEventListener('click', () => {
       if (mediaRecorder.state === 'inactive') {
         recordedChunks = []; // Clear previous recordings
-        mediaRecorder.start();
-        startButton.disabled = true;
-        stopButton.disabled = false;
+        mediaRecorder.start(); // Start recording
+        startButton.disabled = true; // Disable start button
+        stopButton.disabled = false; // Enable stop button
         playbackSection.style.display = 'none'; // Hide playback section during recording
-        countdownTime = 30; // Reset the countdown timer
-        updateCountdownDisplay();
+        countdownTime = 30; // Reset the countdown timer to 30 seconds
+        updateCountdownDisplay(); // Update the display immediately
 
-        // Start the countdown timer
+        // Start the countdown timer - updates every second
         countdownInterval = setInterval(() => {
           countdownTime--;
           updateCountdownDisplay();
@@ -155,46 +177,65 @@
           }
         }, 1000);
 
-        // Stop recording automatically after 30 seconds
+        // Stop recording automatically after 30 seconds (fallback)
         recordingTimeout = setTimeout(() => {
           stopRecording();
         }, 30000);
       }
     });
 
+    // ========================================
+    // STOP RECORDING BUTTON EVENT LISTENER
+    // ========================================
     stopButton.addEventListener('click', () => {
-      stopRecording();
+      stopRecording(); // Call the stop recording function
     });
 
+    // ========================================
+    // SAVE RECORDING BUTTON EVENT LISTENER
+    // ========================================
     saveButton.addEventListener('click', () => {
+      // Create a video blob from the recorded chunks
       const blob = new Blob(recordedChunks, { type: 'video/mp4' });
-      const url = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(blob); // Create a URL for the blob
+      
+      // Create a temporary download link
       const a = document.createElement('a');
-      a.style.display = 'none';
+      a.style.display = 'none'; // Hide the link
       a.href = url;
-      a.download = 'recording.mp4';
+      a.download = 'recording.mp4'; // Set the filename
+      
+      // Trigger the download
       document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(url); // Clean up the URL object
     });
 
+    // ========================================
+    // STOP RECORDING UTILITY FUNCTION
+    // ========================================
     function stopRecording() {
       if (mediaRecorder.state === 'recording') {
-        mediaRecorder.stop();
-        clearTimeout(recordingTimeout); // Clear the timeout if the user stops recording manually
+        mediaRecorder.stop(); // Stop the MediaRecorder
+        clearTimeout(recordingTimeout); // Clear the auto-stop timeout
         clearInterval(countdownInterval); // Stop the countdown timer
-        startButton.disabled = false;
-        stopButton.disabled = true;
+        startButton.disabled = false; // Re-enable start button
+        stopButton.disabled = true; // Disable stop button
         countdownTimer.textContent = ''; // Clear the timer display
       }
     }
 
+    // ========================================
+    // UPDATE COUNTDOWN DISPLAY UTILITY FUNCTION
+    // ========================================
     function updateCountdownDisplay() {
       countdownTimer.textContent = `Time remaining: ${countdownTime}s`;
     }
 
-    // Initialize media on page load
-    window.onload = initializeMedia;
+    // ========================================
+    // INITIALIZE APPLICATION ON PAGE LOAD
+    // ========================================
+    window.onload = initializeMedia; // Start the application when page loads
   </script>
 </body>
 
